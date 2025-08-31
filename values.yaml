@@ -1,0 +1,89 @@
+config:
+  filename_format: "{{ created_year }}/{{ correspondent }}/{{ document_type }}-{{ title }}-{{ asn }}"
+  url: "http://paperless.local"
+
+webserver:
+  image: ghcr.io/paperless-ngx/paperless-ngx:2.18.2
+  replicaCount: 1
+  strategyType: Recreate
+
+  resources:
+    limits:
+      cpu: "2000m"
+      memory: "4Gi"
+    requests:
+      cpu: "0"
+      memory: "0"
+
+  service:
+    type: ClusterIP
+    port: 8000
+
+storage:
+  emptyDir: {}
+  # persistentVolumeClaim:
+  #   name: paperless-data
+
+extraObjects: []
+
+ingress:
+  enabled: false
+  className: ""
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+  extraAnnotations: {}
+  tls: []
+
+postgres:
+  image: docker.io/library/postgres:17.6-alpine
+  strategyType: Recreate
+  persistentVolumeClaim:
+    enabled: false
+    accessModes:
+      - ReadWriteOnce
+    size: 10Gi
+    storageClassName: ""
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "0"
+      memory: "0"
+
+broker:
+  image: docker.io/library/redis:8.2-alpine
+  strategyType: Recreate
+  persistentVolumeClaim:
+    enabled: false
+    accessModes:
+      - ReadWriteOnce
+    size: 10Gi
+    storageClassName: ""
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "0"
+      memory: "0"
+
+gotenberg:
+  image: docker.io/gotenberg/gotenberg:8
+  resources:
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+    requests:
+      cpu: "0"
+      memory: "0"
+
+tika:
+  image: docker.io/apache/tika:3.2.2.0-full
+  resources:
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+    requests:
+      cpu: "0"
+      memory: "0"

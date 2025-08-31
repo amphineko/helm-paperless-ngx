@@ -1,0 +1,6 @@
+{
+    "helm-intellisense.customValueFileNames": [
+        "values.local.yaml",
+        "values.yaml"
+    ]
+}
