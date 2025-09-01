@@ -1,1 +1,6 @@
 values.local.yaml
+
+# Chart packaging and release artifacts
+*.tgz
+.cr-release-packages/
+.cr-index/
