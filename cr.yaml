@@ -1,0 +1,18 @@
+---
+# Configuration for chart-releaser
+# See: https://github.com/helm/chart-releaser#config-file
+
+# Owner and repository
+owner: amphineko
+git-repo: helm-paperless-ngx
+
+# Package settings
+package-path: .cr-release-packages
+index-path: .cr-index
+
+# Release settings
+generate-release-notes: true
+make-release-latest: true
+
+# Skip if package already exists
+skip-existing: true
