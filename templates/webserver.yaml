@@ -120,7 +120,9 @@ spec:
     {{- toYaml .Values.ingress.tls | nindent 4 }}
   {{- end }}
   rules:
-    - http:
+    {{- range .Values.ingress.hosts }}
+    - host: {{ .host }}
+      http:
         paths:
           - path: /
             pathType: Prefix
@@ -128,5 +130,6 @@ spec:
               service:
                 name: webserver
                 port:
-                  name: http
+                  number: {{$.Values.webserver.service.port}}
+    {{- end }}
 {{- end }}

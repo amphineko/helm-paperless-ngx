@@ -22,9 +22,22 @@ webserver:
 storage:
   emptyDir: {}
   # persistentVolumeClaim:
-  #   name: paperless-data
+  #   name: paperless-smb-data
 
-extraObjects: []
+extraObjects:
+  # - apiVersion: v1
+  #   kind: PersistentVolumeClaim
+  #   metadata:
+  #     name: paperless-smb-data
+  #   spec:
+  #     accessModes:
+  #       - ReadWriteMany
+  #     resources:
+  #       requests:
+  #         storage: 1000Gi
+  #     storageClassName: smb
+  #     volumeMode: Filesystem
+  #     volumeName: paperless-smb-data
 
 ingress:
   enabled: false
@@ -32,6 +45,8 @@ ingress:
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "100m"
   extraAnnotations: {}
+  hosts:
+    - host: paperless.local
   tls: []
 
 postgres:
