@@ -42,12 +42,20 @@ extraObjects:
 ingress:
   enabled: false
   className: ""
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+  annotations: {}
   extraAnnotations: {}
   hosts:
     - host: paperless.local
   tls: []
+  buffering:
+    enabled: true
+    middlewareName: upload-limit
+    maxRequestBodyBytes: 104857600
+    memRequestBodyBytes: 1048576
+  httpRedirect:
+    enabled: false
+    middlewareName: https-redirect
+    permanent: true
 
 postgres:
   image: docker.io/library/postgres:17.6-alpine
