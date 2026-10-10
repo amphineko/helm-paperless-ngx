@@ -9,7 +9,7 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: {{.Values.postgres.strategyType}}
+    type: "{{ .Values.postgres.strategyType }}"
   selector:
     matchLabels:
       app.kubernetes.io/name: paperless-ngx
@@ -20,9 +20,23 @@ spec:
         app.kubernetes.io/name: paperless-ngx
         app.kubernetes.io/component: postgres
     spec:
+      securityContext:
+        fsGroup: 999
+        runAsNonRoot: true
+        runAsUser: 999
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: postgres
-          image: {{.Values.postgres.image}}
+          image: "{{ .Values.postgres.image }}"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            runAsNonRoot: true
+            runAsUser: 999
           env:
             - name: POSTGRES_DB
               value: "paperless"
@@ -41,11 +55,11 @@ spec:
               protocol: TCP
           resources:
             limits:
-              cpu: {{.Values.postgres.resources.limits.cpu}}
-              memory: {{.Values.postgres.resources.limits.memory}}
+              cpu: "{{ .Values.postgres.resources.limits.cpu }}"
+              memory: "{{ .Values.postgres.resources.limits.memory }}"
             requests:
-              cpu: {{.Values.postgres.resources.requests.cpu}}
-              memory: {{.Values.postgres.resources.requests.memory}}
+              cpu: "{{ .Values.postgres.resources.requests.cpu }}"
+              memory: "{{ .Values.postgres.resources.requests.memory }}"
           volumeMounts:
             - name: postgres-storage
               mountPath: /var/lib/postgresql/data
@@ -70,12 +84,12 @@ metadata:
     app.kubernetes.io/component: postgres
 spec:
   accessModes:
-    - {{ index .Values.postgres.persistentVolumeClaim.accessModes 0 }}
+    - "{{ index .Values.postgres.persistentVolumeClaim.accessModes 0 }}"
   resources:
     requests:
-      storage: {{.Values.postgres.persistentVolumeClaim.size}}
+      storage: "{{ .Values.postgres.persistentVolumeClaim.size }}"
   {{- if .Values.postgres.persistentVolumeClaim.storageClassName }}
-  storageClassName: {{.Values.postgres.persistentVolumeClaim.storageClassName}}
+  storageClassName: "{{ .Values.postgres.persistentVolumeClaim.storageClassName }}"
   {{- end }}
 {{- end }}
 

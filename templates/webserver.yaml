@@ -20,16 +20,65 @@ spec:
         app.kubernetes.io/name: paperless-ngx
         app.kubernetes.io/component: webserver
     spec:
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
+        - name: init-directories
+          image: docker.io/library/busybox:1.38.0@sha256:dc2d74b28e4cf8984fa52af1f39bc7c3d9c73760b41a74d629f5d11b1ab28616
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            runAsNonRoot: true
+            runAsUser: 1000
+          command:
+            - "mkdir"
+            - "-p"
+            - "/mnt/empty/run"
+            - "/mnt/empty/tmp"
+          volumeMounts:
+            - name: shared-empty
+              mountPath: /mnt/empty
         - name: wait-for-postgres
-          image: busybox
+          image: docker.io/library/busybox:1.38.0@sha256:dc2d74b28e4cf8984fa52af1f39bc7c3d9c73760b41a74d629f5d11b1ab28616
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            runAsNonRoot: true
+            runAsUser: 1000
           command: ['sh', '-c', 'until nc -z -v -w30 postgres 5432; do echo "Waiting for postgres connection..."; sleep 5; done;']
         - name: wait-for-redis
-          image: busybox
+          image: docker.io/library/busybox:1.38.0@sha256:dc2d74b28e4cf8984fa52af1f39bc7c3d9c73760b41a74d629f5d11b1ab28616
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            runAsNonRoot: true
+            runAsUser: 1000
           command: ['sh', '-c', 'until nc -z -v -w30 broker 6379; do echo "Waiting for redis connection..."; sleep 5; done;']
       containers:
         - name: webserver
-          image: {{.Values.webserver.image}}
+          image: "{{ .Values.webserver.image }}"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            runAsNonRoot: true
+            runAsUser: 1000
           env:
             - name: PAPERLESS_DBHOST
               value: "postgres"
@@ -55,11 +104,11 @@ spec:
               port: http
           resources:
             limits:
-              cpu: {{.Values.webserver.resources.limits.cpu}}
-              memory: {{.Values.webserver.resources.limits.memory}}
+              cpu: "{{ .Values.webserver.resources.limits.cpu }}"
+              memory: "{{ .Values.webserver.resources.limits.memory }}"
             requests:
-              cpu: {{.Values.webserver.resources.requests.cpu}}
-              memory: {{.Values.webserver.resources.requests.memory}}
+              cpu: "{{ .Values.webserver.resources.requests.cpu }}"
+              memory: "{{ .Values.webserver.resources.requests.memory }}"
           volumeMounts:
             - name: storage
               mountPath: /usr/src/paperless/data
@@ -67,7 +116,15 @@ spec:
             - name: storage
               mountPath: /usr/src/paperless/media
               subPath: media
+            - name: shared-empty
+              mountPath: /run
+              subPath: run
+            - name: shared-empty
+              mountPath: /tmp
+              subPath: tmp
       volumes:
+        - name: shared-empty
+          emptyDir: {}
         - name: storage
           {{- if .Values.storage.persistentVolumeClaim }}
           persistentVolumeClaim:
