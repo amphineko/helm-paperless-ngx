@@ -80,6 +80,13 @@ spec:
             runAsNonRoot: true
             runAsUser: 1000
           env:
+            - name: PAPERLESS_DBENGINE
+              value: "postgresql"
+            - name: PAPERLESS_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.webserver.secretKey.name | quote }}
+                  key: {{ .Values.webserver.secretKey.key | quote }}
             - name: PAPERLESS_DBHOST
               value: "postgres"
             - name: PAPERLESS_FILENAME_FORMAT

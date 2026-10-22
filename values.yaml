@@ -3,7 +3,11 @@ config:
   url: "http://paperless.local"
 
 webserver:
-  image: ghcr.io/paperless-ngx/paperless-ngx:2.18.2
+  image: ghcr.io/paperless-ngx/paperless-ngx:3.3.3@sha256:dba0242c1df1843643df4eb50ce5639f3a7900f414879088fd5bed8eaf2d456d
+  secretKey:
+    # This Secret must exist before deploying Paperless-ngx v3.
+    name: paperless-secret-key
+    key: PAPERLESS_SECRET_KEY
   replicaCount: 1
   strategyType: Recreate
 
