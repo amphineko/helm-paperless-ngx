@@ -1,0 +1,26 @@
+{{- if and .Values.gateway.enabled .Values.gateway.oidc.enabled }}
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: webserver-oidc
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: paperless-ngx
+    app.kubernetes.io/component: webserver
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: webserver-gateway-https
+  oidc:
+    provider:
+      issuer: {{ required "gateway.oidc.providerIssuer is required" .Values.gateway.oidc.providerIssuer | quote }}
+    clientIDRef:
+      name: {{ .Values.gateway.oidc.secretName | quote }}
+    clientSecret:
+      name: {{ .Values.gateway.oidc.secretName | quote }}
+    redirectURL: {{ required "gateway.oidc.redirectURL is required" .Values.gateway.oidc.redirectURL | quote }}
+    logoutPath: {{ .Values.gateway.oidc.logoutPath | quote }}
+    scopes:
+      {{- toYaml .Values.gateway.oidc.scopes | nindent 6 }}
+{{- end }}

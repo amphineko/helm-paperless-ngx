@@ -8,6 +8,15 @@ webserver:
     # This Secret must exist before deploying Paperless-ngx v3.
     name: paperless-secret-key
     key: PAPERLESS_SECRET_KEY
+  socialAuth:
+    enabled: false
+    secretName: ""
+    clientIdKey: client-id
+    clientSecretKey: client-secret
+    providerId: authentik
+    providerName: ""
+    serverUrl: ""
+  disableRegularLogin: false
   replicaCount: 1
   strategyType: Recreate
 
@@ -56,10 +65,24 @@ ingress:
     middlewareName: upload-limit
     maxRequestBodyBytes: 104857600
     memRequestBodyBytes: 1048576
-  httpRedirect:
+gateway:
+  enabled: false
+  name: edge
+  namespace: envoy-gateway-system
+  sectionName: ""
+  hostname: ""
+  requestBuffer:
+    enabled: true
+    limit: 100Mi
+  oidc:
     enabled: false
-    middlewareName: https-redirect
-    permanent: true
+    secretName: ""
+    providerIssuer: ""
+    redirectURL: ""
+    logoutPath: /logout
+    scopes:
+      - email
+      - profile
 
 postgres:
   image: docker.io/library/postgres:17.6-alpine
