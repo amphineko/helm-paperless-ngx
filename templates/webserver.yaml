@@ -20,17 +20,73 @@ spec:
         app.kubernetes.io/name: paperless-ngx
         app.kubernetes.io/component: webserver
     spec:
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
+        - name: init-directories
+          image: docker.io/library/busybox:1.38.0@sha256:dc2d74b28e4cf8984fa52af1f39bc7c3d9c73760b41a74d629f5d11b1ab28616
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            runAsNonRoot: true
+            runAsUser: 1000
+          command:
+            - "mkdir"
+            - "-p"
+            - "/mnt/empty/run"
+            - "/mnt/empty/tmp"
+          volumeMounts:
+            - name: shared-empty
+              mountPath: /mnt/empty
         - name: wait-for-postgres
-          image: busybox
+          image: docker.io/library/busybox:1.38.0@sha256:dc2d74b28e4cf8984fa52af1f39bc7c3d9c73760b41a74d629f5d11b1ab28616
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            runAsNonRoot: true
+            runAsUser: 1000
           command: ['sh', '-c', 'until nc -z -v -w30 postgres 5432; do echo "Waiting for postgres connection..."; sleep 5; done;']
         - name: wait-for-redis
-          image: busybox
+          image: docker.io/library/busybox:1.38.0@sha256:dc2d74b28e4cf8984fa52af1f39bc7c3d9c73760b41a74d629f5d11b1ab28616
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            runAsNonRoot: true
+            runAsUser: 1000
           command: ['sh', '-c', 'until nc -z -v -w30 broker 6379; do echo "Waiting for redis connection..."; sleep 5; done;']
       containers:
         - name: webserver
-          image: {{.Values.webserver.image}}
+          image: "{{ .Values.webserver.image }}"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            runAsNonRoot: true
+            runAsUser: 1000
           env:
+            - name: PAPERLESS_DBENGINE
+              value: "postgresql"
+            - name: PAPERLESS_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.webserver.secretKey.name | quote }}
+                  key: {{ .Values.webserver.secretKey.key | quote }}
             - name: PAPERLESS_DBHOST
               value: "postgres"
             - name: PAPERLESS_FILENAME_FORMAT
@@ -43,6 +99,28 @@ spec:
               value: "1"
             - name: PAPERLESS_TIKA_ENDPOINT
               value: "http://tika:9998"
+            - name: PAPERLESS_SOCIAL_AUTO_SIGNUP
+              value: "false"
+            - name: PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS
+              value: "false"
+            - name: PAPERLESS_DISABLE_REGULAR_LOGIN
+              value: {{ .Values.webserver.disableRegularLogin | quote }}
+            {{ if .Values.webserver.socialAuth.enabled }}
+            - name: PAPERLESS_APPS
+              value: "allauth.socialaccount.providers.openid_connect"
+            - name: PAPERLESS_OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.webserver.socialAuth.secretName | quote }}
+                  key: {{ .Values.webserver.socialAuth.clientIdKey | quote }}
+            - name: PAPERLESS_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.webserver.socialAuth.secretName | quote }}
+                  key: {{ .Values.webserver.socialAuth.clientSecretKey | quote }}
+            - name: PAPERLESS_SOCIALACCOUNT_PROVIDERS
+              value: {{ dict "openid_connect" (dict "APPS" (list (dict "provider_id" .Values.webserver.socialAuth.providerId "name" .Values.webserver.socialAuth.providerName "client_id" "$(PAPERLESS_OIDC_CLIENT_ID)" "secret" "$(PAPERLESS_OIDC_CLIENT_SECRET)" "settings" (dict "server_url" .Values.webserver.socialAuth.serverUrl))) "OAUTH_PKCE_ENABLED" "True") | toJson | quote }}
+            {{ end }}
             - name: PAPERLESS_URL
               value: "{{.Values.config.url}}"
           ports:
@@ -55,11 +133,11 @@ spec:
               port: http
           resources:
             limits:
-              cpu: {{.Values.webserver.resources.limits.cpu}}
-              memory: {{.Values.webserver.resources.limits.memory}}
+              cpu: "{{ .Values.webserver.resources.limits.cpu }}"
+              memory: "{{ .Values.webserver.resources.limits.memory }}"
             requests:
-              cpu: {{.Values.webserver.resources.requests.cpu}}
-              memory: {{.Values.webserver.resources.requests.memory}}
+              cpu: "{{ .Values.webserver.resources.requests.cpu }}"
+              memory: "{{ .Values.webserver.resources.requests.memory }}"
           volumeMounts:
             - name: storage
               mountPath: /usr/src/paperless/data
@@ -67,7 +145,15 @@ spec:
             - name: storage
               mountPath: /usr/src/paperless/media
               subPath: media
+            - name: shared-empty
+              mountPath: /run
+              subPath: run
+            - name: shared-empty
+              mountPath: /tmp
+              subPath: tmp
       volumes:
+        - name: shared-empty
+          emptyDir: {}
         - name: storage
           {{- if .Values.storage.persistentVolumeClaim }}
           persistentVolumeClaim:
@@ -111,6 +197,12 @@ metadata:
     {{- if .Values.ingress.extraAnnotations }}
     {{- toYaml .Values.ingress.extraAnnotations | nindent 4 }}
     {{- end }}
+    {{- if eq .Values.ingress.className "traefik" }}
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    {{- if .Values.ingress.buffering.enabled }}
+    traefik.ingress.kubernetes.io/router.middlewares: {{ printf "%s-%s@kubernetescrd" .Release.Namespace .Values.ingress.buffering.middlewareName | quote }}
+    {{- end }}
+    {{- end }}
 spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
@@ -120,7 +212,9 @@ spec:
     {{- toYaml .Values.ingress.tls | nindent 4 }}
   {{- end }}
   rules:
-    - http:
+    {{- range .Values.ingress.hosts }}
+    - host: {{ .host }}
+      http:
         paths:
           - path: /
             pathType: Prefix
@@ -128,5 +222,6 @@ spec:
               service:
                 name: webserver
                 port:
-                  name: http
+                  number: {{$.Values.webserver.service.port}}
+    {{- end }}
 {{- end }}

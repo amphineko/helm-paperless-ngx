@@ -18,20 +18,34 @@ spec:
         app.kubernetes.io/name: paperless-ngx
         app.kubernetes.io/component: tika
     spec:
+      securityContext:
+        fsGroup: 35002
+        runAsNonRoot: true
+        runAsUser: 35002
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: tika
-          image: {{.Values.tika.image}}
+          image: "{{ .Values.tika.image }}"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            runAsNonRoot: true
+            runAsUser: 35002
           ports:
             - containerPort: 9998
               name: http
               protocol: TCP
           resources:
             limits:
-              cpu: {{.Values.tika.resources.limits.cpu}}
-              memory: {{.Values.tika.resources.limits.memory}}
+              cpu: "{{ .Values.tika.resources.limits.cpu }}"
+              memory: "{{ .Values.tika.resources.limits.memory }}"
             requests:
-              cpu: {{.Values.tika.resources.requests.cpu}}
-              memory: {{.Values.tika.resources.requests.memory}}
+              cpu: "{{ .Values.tika.resources.requests.cpu }}"
+              memory: "{{ .Values.tika.resources.requests.memory }}"
 
 ---
 apiVersion: v1

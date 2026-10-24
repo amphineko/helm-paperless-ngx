@@ -3,7 +3,20 @@ config:
   url: "http://paperless.local"
 
 webserver:
-  image: ghcr.io/paperless-ngx/paperless-ngx:2.18.2
+  image: ghcr.io/paperless-ngx/paperless-ngx:3.3.3@sha256:dba0242c1df1843643df4eb50ce5639f3a7900f414879088fd5bed8eaf2d456d
+  secretKey:
+    # This Secret must exist before deploying Paperless-ngx v3.
+    name: paperless-secret-key
+    key: PAPERLESS_SECRET_KEY
+  socialAuth:
+    enabled: false
+    secretName: ""
+    clientIdKey: client-id
+    clientSecretKey: client-secret
+    providerId: authentik
+    providerName: ""
+    serverUrl: ""
+  disableRegularLogin: false
   replicaCount: 1
   strategyType: Recreate
 
@@ -22,17 +35,54 @@ webserver:
 storage:
   emptyDir: {}
   # persistentVolumeClaim:
-  #   name: paperless-data
+  #   name: paperless-smb-data
 
-extraObjects: []
+extraObjects:
+  # - apiVersion: v1
+  #   kind: PersistentVolumeClaim
+  #   metadata:
+  #     name: paperless-smb-data
+  #   spec:
+  #     accessModes:
+  #       - ReadWriteMany
+  #     resources:
+  #       requests:
+  #         storage: 1000Gi
+  #     storageClassName: smb
+  #     volumeMode: Filesystem
+  #     volumeName: paperless-smb-data
 
 ingress:
   enabled: false
   className: ""
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+  annotations: {}
   extraAnnotations: {}
+  hosts:
+    - host: paperless.local
   tls: []
+  buffering:
+    enabled: true
+    middlewareName: upload-limit
+    maxRequestBodyBytes: 104857600
+    memRequestBodyBytes: 1048576
+gateway:
+  enabled: false
+  name: edge
+  namespace: envoy-gateway-system
+  sectionName: ""
+  hostname: ""
+  requestBuffer:
+    enabled: true
+    limit: 100Mi
+  oidc:
+    enabled: false
+    secretName: ""
+    providerIssuer: ""
+    redirectURL: ""
+    logoutPath: /logout
+    scopes:
+      - email
+      - profile
 
 postgres:
   image: docker.io/library/postgres:17.6-alpine

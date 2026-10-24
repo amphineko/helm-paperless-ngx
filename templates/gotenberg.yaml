@@ -18,18 +18,32 @@ spec:
         app.kubernetes.io/name: paperless-ngx
         app.kubernetes.io/component: gotenberg
     spec:
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        runAsUser: 1001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: gotenberg
-          image: {{.Values.gotenberg.image}}
+          image: "{{ .Values.gotenberg.image }}"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            runAsNonRoot: true
+            runAsUser: 1001
           command:
             - "gotenberg"
             - "--chromium-allow-list"
             - "file:///tmp/.*"
             - "--chromium-disable-javascript"
-      ports:
-        - containerPort: 3000
-          name: http
-          protocol: TCP
+          ports:
+            - containerPort: 3000
+              name: http
+              protocol: TCP
 
 ---
 apiVersion: v1

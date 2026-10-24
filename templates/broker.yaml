@@ -9,7 +9,7 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: {{.Values.broker.strategyType}}
+    type: "{{ .Values.broker.strategyType }}"
   selector:
     matchLabels:
       app.kubernetes.io/name: paperless-ngx
@@ -20,9 +20,23 @@ spec:
         app.kubernetes.io/name: paperless-ngx
         app.kubernetes.io/component: redis
     spec:
+      securityContext:
+        fsGroup: 999
+        runAsNonRoot: true
+        runAsUser: 999
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: redis
-          image: {{.Values.broker.image}}
+          image: "{{ .Values.broker.image }}"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            runAsNonRoot: true
+            runAsUser: 999
           livenessProbe:
             tcpSocket:
               port: redis
@@ -34,11 +48,11 @@ spec:
               protocol: TCP
           resources:
             limits:
-              cpu: {{.Values.broker.resources.limits.cpu}}
-              memory: {{.Values.broker.resources.limits.memory}}
+              cpu: "{{ .Values.broker.resources.limits.cpu }}"
+              memory: "{{ .Values.broker.resources.limits.memory }}"
             requests:
-              cpu: {{.Values.broker.resources.requests.cpu}}
-              memory: {{.Values.broker.resources.requests.memory}}
+              cpu: "{{ .Values.broker.resources.requests.cpu }}"
+              memory: "{{ .Values.broker.resources.requests.memory }}"
           volumeMounts:
             - name: redis-storage
               mountPath: /data
@@ -63,12 +77,12 @@ metadata:
     app.kubernetes.io/component: redis
 spec:
   accessModes:
-    - {{ index .Values.broker.persistentVolumeClaim.accessModes 0 }}
+    - "{{ index .Values.broker.persistentVolumeClaim.accessModes 0 }}"
   resources:
     requests:
-      storage: {{.Values.broker.persistentVolumeClaim.size}}
+      storage: "{{ .Values.broker.persistentVolumeClaim.size }}"
   {{- if .Values.broker.persistentVolumeClaim.storageClassName }}
-  storageClassName: {{.Values.broker.persistentVolumeClaim.storageClassName}}
+  storageClassName: "{{ .Values.broker.persistentVolumeClaim.storageClassName }}"
   {{- end }}
 {{- end }}
 

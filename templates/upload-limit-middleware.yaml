@@ -1,0 +1,14 @@
+{{- if and .Values.ingress.enabled (eq .Values.ingress.className "traefik") .Values.ingress.buffering.enabled }}
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ required "ingress.buffering.middlewareName is required" .Values.ingress.buffering.middlewareName | quote }}
+  labels:
+    app.kubernetes.io/component: webserver
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: paperless-ngx
+spec:
+  buffering:
+    maxRequestBodyBytes: {{ int .Values.ingress.buffering.maxRequestBodyBytes }}
+    memRequestBodyBytes: {{ int .Values.ingress.buffering.memRequestBodyBytes }}
+{{- end }}
