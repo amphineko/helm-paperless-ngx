@@ -70,6 +70,9 @@ gateway:
   name: edge
   namespace: envoy-gateway-system
   sectionName: ""
+  # Set this to attach the Route to multiple Gateway listeners, for example
+  # internal HTTPS and a Cloudflared HTTPS listener.
+  parentRefs: []
   hostname: ""
   requestBuffer:
     enabled: true
@@ -81,6 +84,7 @@ gateway:
     redirectURL: ""
     logoutPath: /logout
     scopes:
+      - openid
       - email
       - profile
 
