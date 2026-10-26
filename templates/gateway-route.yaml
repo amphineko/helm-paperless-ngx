@@ -9,9 +9,13 @@ metadata:
     app.kubernetes.io/component: webserver
 spec:
   parentRefs:
+    {{- if .Values.gateway.parentRefs }}
+    {{- toYaml .Values.gateway.parentRefs | nindent 4 }}
+    {{- else }}
     - name: {{ .Values.gateway.name }}
       namespace: {{ .Values.gateway.namespace }}
       sectionName: {{ .Values.gateway.sectionName }}
+    {{- end }}
   hostnames:
     - {{ required "gateway.hostname is required" .Values.gateway.hostname | quote }}
   rules:
